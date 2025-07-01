@@ -88,7 +88,7 @@ const Index = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <MessageSquare className="h-6 w-6 text-orange-500 mr-2" />
-              <h1 className="text-xl font-bold text-orange-600">SchoolGle SMS</h1>
+              <h1 className="text-xl font-bold text-orange-600">schoolgle SMS</h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="relative">
