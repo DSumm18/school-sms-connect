@@ -6,16 +6,13 @@ import Messages from "@/components/Messages";
 import Templates from "@/components/Templates";
 import ScheduledMessages from "@/components/ScheduledMessages";
 import AttendanceDashboard from "@/components/AttendanceDashboard";
-
 const Index = () => {
   const [showEmergencyDialog, setShowEmergencyDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("attendance");
-
   const handleEmergencyBroadcast = () => {
     setShowEmergencyDialog(false);
     console.log("Emergency broadcast sent!");
   };
-
   const tabs = [{
     id: "attendance",
     label: "Attendance Dashboard",
@@ -33,7 +30,6 @@ const Index = () => {
     label: "Scheduled",
     icon: Calendar
   }];
-
   const renderActiveTab = () => {
     switch (activeTab) {
       case "attendance":
@@ -48,45 +44,37 @@ const Index = () => {
         return <AttendanceDashboard />;
     }
   };
-
   return <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-orange-400 to-orange-500 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
+          <div className="text-center">
+            <div className="flex justify-center mb-6">
               <div className="bg-white rounded-2xl p-4 shadow-lg">
                 <MessageSquare className="h-12 w-12 text-orange-500" />
               </div>
-              <div>
-                <h1 className="text-4xl font-bold mb-4">Schoolgle SMS</h1>
-                <p className="text-xl mb-2">1p per message • No surprises</p>
-                <p className="text-lg mb-8 max-w-3xl">
-                  Arbor may be free — but what good is free if parents don't read the messages? 
-                  SchoolGle SMS guarantees your critical messages land in parents' pockets, every time.
-                </p>
+            </div>
+            <h1 className="text-4xl font-bold mb-4 text-left">schoolgle SMS</h1>
+            <p className="text-xl mb-2">1p per message • No surprises</p>
+            <p className="text-lg mb-8 max-w-3xl mx-auto">Arbor may be free — but what good is free if parents don't read the messages? Schoolgle SMS guarantees your critical messages land in parents' pockets, every time.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8">
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+                <div className="text-2xl font-bold">9:00am</div>
+                <div className="text-sm">Late mark alerts sent automatically</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+                <div className="text-2xl font-bold">9:30am</div>
+                <div className="text-sm">Absence follow-up if no response</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+                <div className="text-2xl font-bold">10:00am</div>
+                <div className="text-sm">Safeguarding reports generated</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+                <div className="text-2xl font-bold">100%</div>
+                <div className="text-sm">Message delivery guaranteed</div>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8 mt-8">
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <div className="text-2xl font-bold">9:00am</div>
-              <div className="text-sm">Late mark alerts sent automatically</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <div className="text-2xl font-bold">9:30am</div>
-              <div className="text-sm">Absence follow-up if no response</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <div className="text-2xl font-bold">10:00am</div>
-              <div className="text-sm">Safeguarding reports generated</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-              <div className="text-2xl font-bold">100%</div>
-              <div className="text-sm">Message delivery guaranteed</div>
-            </div>
-          </div>
-          <div className="text-center">
             <Button className="bg-white text-orange-500 hover:bg-gray-100 text-lg px-8 py-3">
               GET STARTED — SEND YOUR FIRST MESSAGE FOR 1p
             </Button>
@@ -166,5 +154,4 @@ const Index = () => {
       </Dialog>
     </div>;
 };
-
 export default Index;
