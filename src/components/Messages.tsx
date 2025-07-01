@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +73,7 @@ const Messages = () => {
     return option ? option.count : 0;
   };
 
-  const estimatedCost = (getRecipientCount() * 0.023).toFixed(2);
+  const estimatedCost = (getRecipientCount() * 0.01).toFixed(2);
 
   return (
     <div className="space-y-6">
@@ -179,7 +178,7 @@ const Messages = () => {
                 <span className="font-medium text-blue-900">£{estimatedCost}</span>
               </div>
               <div className="text-xs text-blue-600 mt-1">
-                {getRecipientCount()} recipients × £0.023 per SMS
+                {getRecipientCount()} recipients × 1p per SMS
               </div>
             </div>
 
