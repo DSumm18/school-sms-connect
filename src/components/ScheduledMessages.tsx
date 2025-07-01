@@ -55,7 +55,7 @@ const ScheduledMessages = () => {
       nextRun: "Paused",
       template: "Payment reminder: Year 7 trip to the Science Museum is due by Friday. £15 via SchoolPay."
     }
-  ];
+  ]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
