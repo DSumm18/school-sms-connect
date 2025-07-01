@@ -15,17 +15,19 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Database, Sheet, Cloud } from "lucide-react";
 import SMSNode from './flow-nodes/SMSNode';
 import EmailNode from './flow-nodes/EmailNode';
 import TriggerNode from './flow-nodes/TriggerNode';
 import DelayNode from './flow-nodes/DelayNode';
+import DataSourceNode from './flow-nodes/DataSourceNode';
 
 const nodeTypes = {
   sms: SMSNode,
   email: EmailNode,
   trigger: TriggerNode,
   delay: DelayNode,
+  dataSource: DataSourceNode,
 };
 
 const initialNodes: Node[] = [
@@ -62,11 +64,15 @@ const FlowBuilder = ({ onFlowChange }: FlowBuilderProps) => {
       data: { 
         label: type === 'sms' ? 'Send SMS' : 
                type === 'email' ? 'Send Email Report' : 
-               type === 'delay' ? 'Wait 30 minutes' : 'New Node',
+               type === 'delay' ? 'Wait 30 minutes' : 
+               type === 'dataSource' ? 'Data Source' : 'New Node',
         content: type === 'sms' ? 'Dear {ParentName}, {StudentName} is late for school.' : 
                 type === 'email' ? 'Late student report for {Date}' : '',
         delay: type === 'delay' ? 30 : undefined,
         email: type === 'email' ? '' : undefined,
+        dataSource: type === 'dataSource' ? 'googleSheets' : undefined,
+        sheetUrl: type === 'dataSource' ? '' : undefined,
+        airtableBase: type === 'dataSource' ? '' : undefined,
       },
     };
     
@@ -76,9 +82,22 @@ const FlowBuilder = ({ onFlowChange }: FlowBuilderProps) => {
     onFlowChange(newNodes, edges);
   };
 
+  const updateNodeData = useCallback((nodeId: string, newData: any) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node
+      )
+    );
+    // Update the flow after a short delay to get the updated nodes
+    setTimeout(() => {
+      onFlowChange(nodes, edges);
+    }, 100);
+  }, [nodes, edges, onFlowChange]);
+
   const handleNodesChange = useCallback((changes: any) => {
     onNodesChange(changes);
-    // Get updated nodes after changes
     setTimeout(() => {
       onFlowChange(nodes, edges);
     }, 0);
@@ -86,7 +105,7 @@ const FlowBuilder = ({ onFlowChange }: FlowBuilderProps) => {
 
   return (
     <div className="h-96 border border-gray-300 rounded-lg relative">
-      <div className="absolute top-2 left-2 z-10 flex gap-2">
+      <div className="absolute top-2 left-2 z-10 flex gap-2 flex-wrap">
         <Button size="sm" onClick={() => addNode('sms')} className="bg-blue-600">
           <Plus className="h-3 w-3 mr-1" />
           SMS
@@ -98,6 +117,10 @@ const FlowBuilder = ({ onFlowChange }: FlowBuilderProps) => {
         <Button size="sm" onClick={() => addNode('delay')} className="bg-orange-600">
           <Plus className="h-3 w-3 mr-1" />
           Delay
+        </Button>
+        <Button size="sm" onClick={() => addNode('dataSource')} className="bg-purple-600">
+          <Plus className="h-3 w-3 mr-1" />
+          Data Source
         </Button>
       </div>
       
