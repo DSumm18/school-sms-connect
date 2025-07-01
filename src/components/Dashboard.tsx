@@ -149,7 +149,7 @@ const Dashboard = ({ stats, onEmergencyClick }: DashboardProps) => {
               ))}
             </div>
           </CardContent>
-        </div>
+        </Card>
       </div>
     </div>
   );
