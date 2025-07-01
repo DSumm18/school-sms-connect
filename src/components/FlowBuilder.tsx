@@ -11,6 +11,7 @@ import {
   Connection,
   Edge,
   Node,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from "@/components/ui/button";
@@ -111,7 +112,7 @@ const FlowBuilder = ({ onFlowChange }: FlowBuilderProps) => {
         className="bg-gray-50"
       >
         <Controls position="bottom-right" />
-        <Background variant="dots" gap={12} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         <MiniMap />
       </ReactFlow>
     </div>
