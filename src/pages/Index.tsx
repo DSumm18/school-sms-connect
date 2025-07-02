@@ -26,7 +26,7 @@ const Index = () => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, email')
+        .select('full_name')
         .eq('id', user.id)
         .single();
 
