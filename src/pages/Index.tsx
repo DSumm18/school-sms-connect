@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, Settings, LogOut, Bell, Search, MessageSquare, Calendar, FileText, CreditCard } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import Messages from "@/components/Messages";
 import Templates from "@/components/Templates";
 import ScheduledMessages from "@/components/ScheduledMessages";
@@ -12,10 +14,20 @@ import Credits from "@/components/Credits";
 const Index = () => {
   const [showEmergencyDialog, setShowEmergencyDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("attendance");
+  const { signOut, user } = useAuth();
+  const { toast } = useToast();
 
   const handleEmergencyBroadcast = () => {
     setShowEmergencyDialog(false);
     console.log("Emergency broadcast sent!");
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been successfully signed out.",
+    });
   };
 
   const tabs = [
@@ -112,6 +124,11 @@ const Index = () => {
             <div className="flex items-center">
               <MessageSquare className="h-6 w-6 text-orange-500 mr-2" />
               <h1 className="text-xl font-bold text-orange-600">schoolgle SMS</h1>
+              {user && (
+                <span className="ml-4 text-sm text-gray-600">
+                  Welcome, {user.user_metadata?.full_name || user.email}
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -128,7 +145,7 @@ const Index = () => {
               <Button variant="ghost" size="sm">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
