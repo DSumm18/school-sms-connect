@@ -1,16 +1,106 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Zap, TrendingUp, Package, ShoppingCart } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { CreditCard, Zap, TrendingUp, Package, ShoppingCart, FileText, Receipt } from "lucide-react";
+import { loadStripe } from '@stripe/stripe-js';
+import InvoiceManager from "./InvoiceManager";
+
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_...');
 
 const Credits = () => {
-  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'invoice'>('card');
+  const [currentSchoolId, setCurrentSchoolId] = useState<string>('');
+  const [smsAppId, setSmsAppId] = useState<string>('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const currentCredits = 3750;
-  const monthlyUsage = 1250;
-  const estimatedRemaining = 45; // days
+  // Get current user and school
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get user's current school from user_school_history
+        const { data: schoolHistory } = await supabase
+          .from('user_school_history')
+          .select('school_id')
+          .eq('user_id', user.id)
+          .eq('is_current', true)
+          .single();
+        
+        if (schoolHistory) {
+          setCurrentSchoolId(schoolHistory.school_id);
+        }
+      }
+    };
+
+    const getSmsApp = async () => {
+      const { data: app } = await supabase
+        .from('apps')
+        .select('id')
+        .eq('name', 'SMS')
+        .single();
+      
+      if (app) {
+        setSmsAppId(app.id);
+      }
+    };
+
+    getCurrentUser();
+    getSmsApp();
+  }, []);
+
+  // Fetch credit balances
+  const { data: creditBalance } = useQuery({
+    queryKey: ['credit-balances', currentSchoolId, smsAppId],
+    queryFn: async () => {
+      if (!currentSchoolId || !smsAppId) return null;
+      
+      const { data, error } = await supabase
+        .from('credit_balances')
+        .select('*')
+        .eq('school_id', currentSchoolId)
+        .eq('app_id', smsAppId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!currentSchoolId && !!smsAppId,
+  });
+
+  // Fetch usage logs for monthly usage
+  const { data: monthlyUsage } = useQuery({
+    queryKey: ['monthly-usage', currentSchoolId, smsAppId],
+    queryFn: async () => {
+      if (!currentSchoolId || !smsAppId) return 0;
+      
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('usage_logs')
+        .select('credits_used')
+        .eq('school_id', currentSchoolId)
+        .eq('app_id', smsAppId)
+        .gte('created_at', startOfMonth.toISOString());
+
+      if (error) throw error;
+      return data.reduce((sum, log) => sum + log.credits_used, 0);
+    },
+    enabled: !!currentSchoolId && !!smsAppId,
+  });
+
+  const currentCredits = creditBalance?.credits_available || 0;
+  const usedCredits = monthlyUsage || 0;
+  const estimatedRemaining = usedCredits > 0 ? Math.floor(currentCredits / (usedCredits / 30)) : 999;
 
   const packages = [
     {
@@ -51,12 +141,72 @@ const Credits = () => {
     }
   ];
 
-  const usageHistory = [
-    { month: "December 2024", sent: 1250, cost: 28.75 },
-    { month: "November 2024", sent: 1180, cost: 27.14 },
-    { month: "October 2024", sent: 980, cost: 22.54 },
-    { month: "September 2024", sent: 1450, cost: 33.35 }
-  ];
+  const purchaseMutation = useMutation({
+    mutationFn: async ({ packageId, method }: { packageId: number; method: 'card' | 'invoice' }) => {
+      const { data, error } = await supabase.functions.invoke('stripe-purchase', {
+        body: {
+          action: method === 'card' ? 'create_payment_intent' : 'create_invoice',
+          packageId,
+          schoolId: currentSchoolId,
+          appId: smsAppId
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async (data, variables) => {
+      if (variables.method === 'card') {
+        const stripe = await stripePromise;
+        if (stripe && data.client_secret) {
+          const { error } = await stripe.confirmCardPayment(data.client_secret);
+          if (error) {
+            toast({
+              title: "Payment Failed",
+              description: error.message,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Payment Successful!",
+              description: "Your credits have been added to your account.",
+            });
+            queryClient.invalidateQueries({ queryKey: ['credit-balances'] });
+          }
+        }
+      } else {
+        toast({
+          title: "Invoice Created",
+          description: `Invoice ${data.invoice_number} has been generated. You can download it below.`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      }
+      setSelectedPackage(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to process purchase: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePurchase = () => {
+    if (!selectedPackage || !currentSchoolId || !smsAppId) {
+      toast({
+        title: "Error",
+        description: "Please select a package and ensure you're logged in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    purchaseMutation.mutate({
+      packageId: selectedPackage,
+      method: paymentMethod
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -87,7 +237,7 @@ const Credits = () => {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">{monthlyUsage.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-900">{usedCredits.toLocaleString()}</div>
             <p className="text-xs text-green-600 mt-1">SMS sent this month</p>
           </CardContent>
         </Card>
@@ -98,7 +248,7 @@ const Credits = () => {
             <Zap className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{estimatedRemaining}</div>
+            <div className="text-2xl font-bold text-orange-900">{estimatedRemaining > 999 ? '∞' : estimatedRemaining}</div>
             <p className="text-xs text-orange-600 mt-1">days at current usage</p>
           </CardContent>
         </Card>
@@ -107,6 +257,36 @@ const Credits = () => {
       {/* Credit Packages */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Purchase Credits</h3>
+        
+        {/* Payment Method Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2">Payment Method</label>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setPaymentMethod('card')}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg ${
+                paymentMethod === 'card' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <CreditCard className="h-4 w-4" />
+              Pay by Card
+            </button>
+            <button
+              onClick={() => setPaymentMethod('invoice')}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg ${
+                paymentMethod === 'invoice' 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              Pay by Invoice
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {packages.map((pkg) => (
             <Card 
@@ -134,7 +314,7 @@ const Credits = () => {
                   className="w-full mt-4" 
                   variant={selectedPackage === pkg.id ? "default" : "outline"}
                 >
-                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  {paymentMethod === 'card' ? <CreditCard className="mr-2 h-4 w-4" /> : <Receipt className="mr-2 h-4 w-4" />}
                   Select
                 </Button>
               </CardContent>
@@ -150,11 +330,21 @@ const Credits = () => {
                   <h4 className="font-semibold">Ready to purchase?</h4>
                   <p className="text-sm text-gray-600">
                     {packages.find(p => p.id === selectedPackage)?.name} - £{packages.find(p => p.id === selectedPackage)?.price}
+                    {paymentMethod === 'invoice' && ' (Invoice will be generated)'}
                   </p>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Purchase Now
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handlePurchase}
+                  disabled={purchaseMutation.isPending}
+                >
+                  {paymentMethod === 'card' ? <CreditCard className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
+                  {purchaseMutation.isPending 
+                    ? 'Processing...' 
+                    : paymentMethod === 'card' 
+                      ? 'Pay Now' 
+                      : 'Generate Invoice'
+                  }
                 </Button>
               </div>
             </CardContent>
@@ -162,28 +352,10 @@ const Credits = () => {
         )}
       </div>
 
-      {/* Usage History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {usageHistory.map((month, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium">{month.month}</div>
-                  <div className="text-sm text-gray-600">{month.sent.toLocaleString()} SMS sent</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">£{month.cost.toFixed(2)}</div>
-                  <div className="text-sm text-gray-600">Total cost</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Invoice Manager */}
+      {currentSchoolId && (
+        <InvoiceManager schoolId={currentSchoolId} />
+      )}
     </div>
   );
 };

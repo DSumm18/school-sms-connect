@@ -162,6 +162,114 @@ export type Database = {
           },
         ]
       }
+      credit_balances: {
+        Row: {
+          app_id: string | null
+          credits_available: number
+          credits_used: number
+          id: string
+          last_updated: string
+          school_id: string | null
+        }
+        Insert: {
+          app_id?: string | null
+          credits_available?: number
+          credits_used?: number
+          id?: string
+          last_updated?: string
+          school_id?: string | null
+        }
+        Update: {
+          app_id?: string | null
+          credits_available?: number
+          credits_used?: number
+          id?: string
+          last_updated?: string
+          school_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_balances_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_balances_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_purchases: {
+        Row: {
+          amount: number
+          app_id: string | null
+          created_at: string
+          credits_purchased: number
+          id: string
+          invoice_number: string | null
+          metadata: Json | null
+          paid_at: string | null
+          payment_method: string
+          school_id: string | null
+          status: string
+          stripe_invoice_id: string | null
+          stripe_payment_intent_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          app_id?: string | null
+          created_at?: string
+          credits_purchased: number
+          id?: string
+          invoice_number?: string | null
+          metadata?: Json | null
+          paid_at?: string | null
+          payment_method: string
+          school_id?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          app_id?: string | null
+          created_at?: string
+          credits_purchased?: number
+          id?: string
+          invoice_number?: string | null
+          metadata?: Json | null
+          paid_at?: string | null
+          payment_method?: string
+          school_id?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_purchases_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_purchases_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_categories: {
         Row: {
           created_at: string
@@ -764,6 +872,63 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_school"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          credit_purchase_id: string | null
+          due_date: string
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          pdf_url: string | null
+          school_id: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          credit_purchase_id?: string | null
+          due_date: string
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          school_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          credit_purchase_id?: string | null
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          school_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_credit_purchase_id_fkey"
+            columns: ["credit_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "credit_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
@@ -1886,6 +2051,54 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          app_id: string | null
+          created_at: string
+          credits_used: number
+          id: string
+          school_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          app_id?: string | null
+          created_at?: string
+          credits_used: number
+          id?: string
+          school_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          app_id?: string | null
+          created_at?: string
+          credits_used?: number
+          id?: string
+          school_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_logs_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_logs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_deal_preferences: {
         Row: {
           category_id: string | null
@@ -2113,6 +2326,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invoice_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_trust_usage_stats: {
         Args: { trust_uuid: string }
         Returns: {
@@ -2140,6 +2357,15 @@ export type Database = {
       process_gias_import: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      update_credit_balance: {
+        Args: {
+          p_school_id: string
+          p_app_id: string
+          p_credits_to_add?: number
+          p_credits_to_use?: number
+        }
+        Returns: undefined
       }
     }
     Enums: {
