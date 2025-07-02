@@ -63,12 +63,12 @@ serve(async (req) => {
 async function createPaymentIntent(stripe: Stripe, supabase: any, user: any, payload: any) {
   const { packageId, schoolId, appId } = payload
   
-  // Get package details (you might want to store these in database)
+  // Updated packages with 1p per SMS pricing
   const packages = {
-    1: { credits: 1000, price: 25 },
-    2: { credits: 5000, price: 115 },
-    3: { credits: 10000, price: 200 },
-    4: { credits: 25000, price: 450 }
+    1: { credits: 1000, price: 10 },   // £10 for 1,000 SMS
+    2: { credits: 5000, price: 50 },   // £50 for 5,000 SMS  
+    3: { credits: 10000, price: 100 }, // £100 for 10,000 SMS
+    4: { credits: 25000, price: 250 }  // £250 for 25,000 SMS
   }
   
   const selectedPackage = packages[packageId as keyof typeof packages]
@@ -120,11 +120,12 @@ async function createPaymentIntent(stripe: Stripe, supabase: any, user: any, pay
 async function createInvoice(stripe: Stripe, supabase: any, user: any, payload: any) {
   const { packageId, schoolId, appId } = payload
   
+  // Updated packages with 1p per SMS pricing
   const packages = {
-    1: { credits: 1000, price: 25 },
-    2: { credits: 5000, price: 115 },
-    3: { credits: 10000, price: 200 },
-    4: { credits: 25000, price: 450 }
+    1: { credits: 1000, price: 10 },   // £10 for 1,000 SMS
+    2: { credits: 5000, price: 50 },   // £50 for 5,000 SMS  
+    3: { credits: 10000, price: 100 }, // £100 for 10,000 SMS
+    4: { credits: 25000, price: 250 }  // £250 for 25,000 SMS
   }
   
   const selectedPackage = packages[packageId as keyof typeof packages]

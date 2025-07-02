@@ -105,39 +105,39 @@ const Credits = () => {
   const packages = [
     {
       id: 1,
-      name: "Starter Pack",
+      name: "Small Pack",
       credits: 1000,
-      price: 25,
-      pricePerSMS: 0.025,
+      price: 10,
+      pricePerSMS: 0.01,
       popular: false,
-      description: "Perfect for small schools"
+      description: "Perfect for occasional messaging"
     },
     {
       id: 2,
-      name: "Standard Pack",
+      name: "Medium Pack",
       credits: 5000,
-      price: 115,
-      pricePerSMS: 0.023,
+      price: 50,
+      pricePerSMS: 0.01,
       popular: true,
-      description: "Most popular choice"
+      description: "Most popular for regular schools"
     },
     {
       id: 3,
-      name: "Professional Pack",
+      name: "Large Pack",
       credits: 10000,
-      price: 200,
-      pricePerSMS: 0.020,
+      price: 100,
+      pricePerSMS: 0.01,
       popular: false,
-      description: "For large schools"
+      description: "For busy schools with lots of messaging"
     },
     {
       id: 4,
-      name: "Enterprise Pack",
+      name: "Bulk Pack",
       credits: 25000,
-      price: 450,
-      pricePerSMS: 0.018,
+      price: 250,
+      pricePerSMS: 0.01,
       popular: false,
-      description: "Multi-academy trusts"
+      description: "Maximum value for large schools"
     }
   ];
 
@@ -214,7 +214,7 @@ const Credits = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">SMS Credits</h2>
-          <p className="text-gray-600">Purchase and manage your SMS credits</p>
+          <p className="text-gray-600">Simple pricing: 1p per SMS. Buy in bulk for less hassle.</p>
         </div>
       </div>
 
@@ -253,6 +253,16 @@ const Credits = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pricing Message */}
+      <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+        <CardContent className="p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-orange-800 mb-2">As close to free as we can make it</h3>
+            <p className="text-orange-700">Just 1p per SMS. Buy in bulk to reduce admin hassle and keep your messaging simple.</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Credit Packages */}
       <div>
@@ -309,7 +319,9 @@ const Credits = () => {
               <CardContent className="text-center">
                 <div className="text-3xl font-bold text-gray-900">£{pkg.price}</div>
                 <div className="text-sm text-gray-600 mb-2">{pkg.credits.toLocaleString()} SMS credits</div>
-                <div className="text-xs text-gray-500">£{pkg.pricePerSMS.toFixed(3)} per SMS</div>
+                <div className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded-full inline-block">
+                  1p per SMS
+                </div>
                 <Button 
                   className="w-full mt-4" 
                   variant={selectedPackage === pkg.id ? "default" : "outline"}

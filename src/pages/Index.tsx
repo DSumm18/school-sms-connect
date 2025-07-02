@@ -75,10 +75,10 @@ const Index = () => {
               </div>
             </div>
             <h1 className="text-4xl font-bold mb-4 text-left">schoolgle SMS</h1>
-            <p className="text-xl mb-2">1p per message • No surprises</p>
+            <p className="text-xl mb-2">1p per message • As close to free as we can make it</p>
             <p className="text-lg mb-8 max-w-3xl mx-auto">
               Arbor may be free — but what good is free if parents don't read the messages? 
-              Schoolgle SMS guarantees your critical messages land in parents' pockets, every time.
+              Schoolgle SMS guarantees your critical messages land in parents' pockets, every time. Just 1p per SMS.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8">
               <div className="bg-white/10 backdrop-blur rounded-lg p-4">
@@ -94,12 +94,12 @@ const Index = () => {
                 <div className="text-sm">Safeguarding reports generated</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-lg p-4">
-                <div className="text-2xl font-bold">100%</div>
-                <div className="text-sm">Message delivery guaranteed</div>
+                <div className="text-2xl font-bold">1p</div>
+                <div className="text-sm">Per SMS - simple pricing</div>
               </div>
             </div>
             <Button className="bg-white text-orange-500 hover:bg-gray-100 text-lg px-8 py-3">
-              GET STARTED — SEND YOUR FIRST MESSAGE FOR 1p
+              GET STARTED — YOUR FIRST 1,000 SMS FOR £10
             </Button>
           </div>
         </div>
