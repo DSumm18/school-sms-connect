@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CreditCard, Zap, TrendingUp, Package, ShoppingCart, FileText, Receipt } from "lucide-react";
 import { loadStripe } from '@stripe/stripe-js';
+import { useAuth } from "@/hooks/useAuth";
 import InvoiceManager from "./InvoiceManager";
 
 // Initialize Stripe
@@ -20,41 +20,58 @@ const Credits = () => {
   const [smsAppId, setSmsAppId] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  // Get current user and school
+  // Get current user's school and SMS app ID
   useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get user's current school from user_school_history
-        const { data: schoolHistory } = await supabase
-          .from('user_school_history')
-          .select('school_id')
-          .eq('user_id', user.id)
-          .eq('is_current', true)
-          .single();
-        
-        if (schoolHistory) {
-          setCurrentSchoolId(schoolHistory.school_id);
-        }
+    const getCurrentUserSchool = async () => {
+      if (!user?.id) return;
+      
+      console.log("Getting current user school for user:", user.id);
+      
+      // Get user's current school from user_school_history
+      const { data: schoolHistory, error: schoolError } = await supabase
+        .from('user_school_history')
+        .select('school_id')
+        .eq('user_id', user.id)
+        .eq('is_current', true)
+        .single();
+      
+      console.log("School history result:", { schoolHistory, schoolError });
+      
+      if (schoolHistory) {
+        setCurrentSchoolId(schoolHistory.school_id);
+        console.log("Set current school ID:", schoolHistory.school_id);
+      } else {
+        console.log("No current school found for user");
+        toast({
+          title: "School Assignment Required",
+          description: "Your account needs to be assigned to a school. Please contact support.",
+          variant: "destructive",
+        });
       }
     };
 
     const getSmsApp = async () => {
-      const { data: app } = await supabase
+      const { data: app, error } = await supabase
         .from('apps')
         .select('id')
         .eq('name', 'SMS')
         .single();
       
+      console.log("SMS app result:", { app, error });
+      
       if (app) {
         setSmsAppId(app.id);
+        console.log("Set SMS app ID:", app.id);
+      } else {
+        console.log("SMS app not found");
       }
     };
 
-    getCurrentUser();
+    getCurrentUserSchool();
     getSmsApp();
-  }, []);
+  }, [user?.id, toast]);
 
   // Fetch credit balances
   const { data: creditBalance } = useQuery({
@@ -143,6 +160,12 @@ const Credits = () => {
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ packageId, method }: { packageId: number; method: 'card' | 'invoice' }) => {
+      console.log("Starting purchase mutation with:", { packageId, method, currentSchoolId, smsAppId, userId: user?.id });
+      
+      if (!currentSchoolId || !smsAppId || !user?.id) {
+        throw new Error('Missing required information: school, app, or user not found');
+      }
+
       const { data, error } = await supabase.functions.invoke('stripe-purchase', {
         body: {
           action: method === 'card' ? 'create_payment_intent' : 'create_invoice',
@@ -152,10 +175,14 @@ const Credits = () => {
         }
       });
 
+      console.log("Stripe purchase function result:", { data, error });
+
       if (error) throw error;
       return data;
     },
     onSuccess: async (data, variables) => {
+      console.log("Purchase mutation success:", { data, variables });
+      
       if (variables.method === 'card') {
         const stripe = await stripePromise;
         if (stripe && data.client_secret) {
@@ -184,6 +211,7 @@ const Credits = () => {
       setSelectedPackage(null);
     },
     onError: (error) => {
+      console.error("Purchase mutation error:", error);
       toast({
         title: "Error",
         description: "Failed to process purchase: " + error.message,
@@ -193,10 +221,39 @@ const Credits = () => {
   });
 
   const handlePurchase = () => {
-    if (!selectedPackage || !currentSchoolId || !smsAppId) {
+    console.log("Handle purchase clicked:", { selectedPackage, currentSchoolId, smsAppId, userId: user?.id });
+    
+    if (!selectedPackage) {
       toast({
         title: "Error",
-        description: "Please select a package and ensure you're logged in.",
+        description: "Please select a package.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to make a purchase.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentSchoolId) {
+      toast({
+        title: "Error",
+        description: "School assignment required. Please contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!smsAppId) {
+      toast({
+        title: "Error",
+        description: "SMS service not available. Please try again later.",
         variant: "destructive",
       });
       return;
@@ -207,6 +264,18 @@ const Credits = () => {
       method: paymentMethod
     });
   };
+
+  // Show loading state while getting user school
+  if (user && !currentSchoolId && !smsAppId) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your school information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

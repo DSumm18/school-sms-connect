@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, Settings, LogOut, Bell, Search, MessageSquare, Calendar, FileText, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import Messages from "@/components/Messages";
 import Templates from "@/components/Templates";
 import ScheduledMessages from "@/components/ScheduledMessages";
@@ -16,6 +17,37 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("attendance");
   const { signOut, user } = useAuth();
   const { toast } = useToast();
+
+  // Fetch user profile to get the first name
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const getFirstName = () => {
+    if (profile?.full_name) {
+      return profile.full_name.split(' ')[0];
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name.split(' ')[0];
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'User';
+  };
 
   const handleEmergencyBroadcast = () => {
     setShowEmergencyDialog(false);
@@ -126,7 +158,7 @@ const Index = () => {
               <h1 className="text-xl font-bold text-orange-600">schoolgle SMS</h1>
               {user && (
                 <span className="ml-4 text-sm text-gray-600">
-                  Welcome, {user.user_metadata?.full_name || user.email}
+                  Welcome, {getFirstName()}
                 </span>
               )}
             </div>
